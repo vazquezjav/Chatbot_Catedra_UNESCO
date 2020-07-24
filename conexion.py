@@ -4,17 +4,58 @@ import logging
 
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
 
+from ibm_watson import AssistantV2
+from ibm_cloud_sdk_core.authenticators import IAMAuthenticator
+import json
+from ibm_watson import ApiException
+
+#------------********** CONEXION CON WATSON ***************---------------
+
+def conexion():
+    try:
+        authenticator = IAMAuthenticator('VZHzvjelK9YsjuYtBGOkXhFLhoDGruweoDcYIfKhE7hT')
+        assistant = AssistantV2(
+            version='2018-09-20',
+            authenticator=authenticator,
+
+        )
+        # assistant.set_service_url('https://api.us-south.assistant.watson.cloud.ibm.com')
+        assistant.set_disable_ssl_verification(True)
+        assistant.set_service_url(
+            'https://api.us-east.assistant.watson.cloud.ibm.com/instances/1b62e879-1f7e-4e0b-9d72-5ab9c1d9328b')
+        session = assistant.create_session('a8817251-2b48-47d0-a208-09f7fde9b369').get_result()
+        session_id = session["session_id"]
+    except ApiException as ex:
+        print("Metodo fallo " + str(ex.code) + ": " + ex.message)
+
+def obtenerMensaje(assistant,session_id, mensaje):
+    message = assistant.message(
+        'a8817251-2b48-47d0-a208-09f7fde9b369',
+        session_id,
+        input={'text': mensaje},
+        context={
+            'metadata': {
+                'deployment': 'myDeployment'
+            }
+        }).get_result()
+
+    output = message['output']
+    generic = output['generic']
+    map = generic[0]
+    # si la respuesta es solo texto, al trabajar con respuestas co imagenes cambiar el codigo
+    respuesta = map['text']
+    return respuesta
+
 # conexion con bot Telegram, token de API
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
                     level=logging.INFO)
 
 logger = logging.getLogger(__name__)
-
-
 # Define a few command handlers. These usually take the two arguments update and
 # context. Error handlers also receive the raised TelegramError object in error.
 def start(update, context):
     """comando start"""
+
     update.message.reply_text('Bienvenido a este humilde bot 🤖 ')
 
 
@@ -25,7 +66,44 @@ def help_command(update, context):
 
 def echo(update, context):
     """mostrar mensaje en pantalla"""
-    print(update.message.text)
+    #update.message.text=1
+    '''try:
+        authenticator = IAMAuthenticator('VZHzvjelK9YsjuYtBGOkXhFLhoDGruweoDcYIfKhE7hT')
+        assistant = AssistantV2(
+            version='2018-09-20',
+            authenticator=authenticator,
+
+        )
+        # assistant.set_service_url('https://api.us-south.assistant.watson.cloud.ibm.com')
+        assistant.set_disable_ssl_verification(True)
+        assistant.set_service_url(
+            'https://api.us-east.assistant.watson.cloud.ibm.com/instances/1b62e879-1f7e-4e0b-9d72-5ab9c1d9328b')
+        session = assistant.create_session('a8817251-2b48-47d0-a208-09f7fde9b369').get_result()
+        session_id = session["session_id"]
+    except ApiException as ex:
+        print("Metodo fallo " + str(ex.code) + ": " + ex.message)
+
+    update.message.text=obtenerMensaje(assistant,session_id, update.message.text)
+    persona = update.message.from_user
+    print(persona)
+    #update.message.text=update.message.text+' '+persona['first_name']+'\n '+' Soy un asistente virtual '
+    print(update.message.text)'''
+    context.bot.send_message(chat_id=update.effective_chat.id,
+                             text='Hola')
+    context.bot.send_sticker(chat_id=update.effective_chat.id,
+                             sticker='CAADAgADOQADfyesDlKEqOOd72VKAg')
+    context.bot.send_audio(chat_id=update.effective_chat.id,
+                             audio='http://www.largesound.com/ashborytour/sound/brobob.mp3')
+    context.bot.send_animation(chat_id=update.effective_chat.id,
+                             animation='http://images6.fanpop.com/image/photos/37800000/-Hello-penguins-of-madagascar-37800672-500-500.gif')
+    context.bot.send_location(chat_id=update.effective_chat.id,
+                             latitude=51.521727,
+                              longitude=-0.117255)
+    '''# Send document
+    bot$sendDocument(chat_id,
+                     document="https://github.com/ebeneditos/telegram.bot/raw/gh-pages/docs/telegram.bot.pdf"
+                     )'''
+
     update.message.reply_text(update.message.text)
 
 def sumar(update, context):
@@ -94,6 +172,7 @@ def main():
     dp.add_handler(CommandHandler("multiplicar", multiplicar))
     dp.add_handler(CommandHandler("dividir", dividir))
 
+
     # on noncommand i.e message - echo the message on Telegram
     dp.add_handler(MessageHandler(Filters.text, echo))
 
@@ -107,4 +186,5 @@ def main():
 
 
 if __name__ == '__main__':
+    conexion()
     main()
