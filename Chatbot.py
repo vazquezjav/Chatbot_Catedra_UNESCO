@@ -18,6 +18,9 @@ class Chatbot():
 
         self.sessionId= self.conexionIbm(ibm_apiKey,ibm_url,ibm_assitantId)
 
+        self.ibm_apikey = ibm_apiKey
+        self.ibm_url=ibm_url
+        self.ibm_assitantId= ibm_assitantId
         # Conexion con el bot
         self.updater=Updater(tokenTelegram,use_context=True)
         self.dispatcher= self.updater.dispatcher
@@ -55,7 +58,8 @@ class Chatbot():
     #--------- Seccion por Comandos ----------
     def start(self,update, context):
         """comando start"""
-        update.message.reply_text('Bienvenido a este humilde bot 🤖 ')
+        update.message.reply_text('Bienvenido a School Bot 🤖 ')
+
 
     def help_command(self, update, context):
         """comando help"""
@@ -64,13 +68,28 @@ class Chatbot():
     #------------ Seccion para mensaje simple --------
     def echo(self, update, context):
         persona = update.message.from_user
-        print("Nombre usuario: "+persona['first_name']+" Mensaje: "+update.message.text)
+        update.message.text=update.message.text.lower()
+        respuesta=''
+        print("Usuario: "+persona['first_name']+" | Mensaje: "+update.message.text)
         if(update.message.text =='hola'):
-            update.message.text='Hola '+persona['first_name']+'\n '+' Soy un asistente virtual y estoy aqui para ayudarte '
+            respuesta='Hola '+persona['first_name']+' 👋'+'\n '+'Me llamo School bot y estoy aqui para ayudarte '
+            update.message.reply_text(respuesta)
         else:
-            update.message.text=self.obtenerMensaje(update.message.text, self.sessionId)
+            #self.sessionId = self.conexionIbm(self.ibm_apikey, self.ibm_url, self.ibm_assitantId)
+            #session = self.assistant.create_session(self.ibm_assitantId).get_result()
+            #sessionId = session["session_id"]
+            #self.sessionId=sessionId
+            respuesta = self.obtenerMensaje(update.message.text, self.sessionId)
+            try:
+                if (respuesta[0]==1):
+                    context.bot.send_message(chat_id=update.effective_chat.id,
+                                             text=respuesta[1])
+                    context.bot.send_photo(update.effective_chat.id, respuesta[2])
+                if type(respuesta) == str:
+                    update.message.reply_text(respuesta)
+            except (ValueError):
+                print('error')
 
-        update.message.reply_text(update.message.text)
 
 
     #------------- Operaciones Matematicas Basicas --------------
@@ -84,7 +103,7 @@ class Chatbot():
             update.message.reply_text("La suma es " + str(suma))
 
         except (ValueError):
-            update.message.reply_text("Que quieres que sume letras, no seas tonto 😑  ")
+            update.message.reply_text("Perdon pero no puedo realizar la operacion  🥺  ")
 
     def restar(self, update, context):
         try:
@@ -96,7 +115,7 @@ class Chatbot():
             update.message.reply_text("La resta es " + str(resta))
 
         except (ValueError):
-            update.message.reply_text("Que quieres que resta letras, no seas tonto 😑   ")
+            update.message.reply_text("Perdon pero no puedo realizar la operacion  🥺   ")
 
     def multiplicar(self,update, context):
         try:
@@ -108,7 +127,7 @@ class Chatbot():
             update.message.reply_text("La multiplicacion es " + str(multiplicacion))
 
         except (ValueError):
-            update.message.reply_text("Que quieres que multiplique letras, no seas tonto 😑   ")
+            update.message.reply_text("Perdon pero no puedo realizar la operacion  🥺  ")
 
     def dividir(self, update, context):
         try:
@@ -120,7 +139,10 @@ class Chatbot():
             update.message.reply_text("La division es " + str(division))
 
         except (ValueError):
-            update.message.reply_text("Que quieres que divida letras, no seas tonto 😑   ")
+            update.message.reply_text("Perdon pero no puedo realizar la operacion  🥺   ")
+
+
+    #------------------ Seccion IBM ----------------------
 
     def conexionIbm(self, apiKey, url, assitantId):
         try:
@@ -152,17 +174,31 @@ class Chatbot():
                     'deployment': 'myDeployment'
                 }
             }).get_result()
-
         try:
+            # si la respuesta es solo texto, al trabajar con respuestas co imagenes cambiar el codigo
             output = message['output']
             generic = output['generic']
             map = generic[0]
-            respuesta = map['text']
+            type = map['response_type']
+            if(type=='text'):
+                respuesta = map['text']
+            if(type=='option'):
+                respuesta=map['description']
+                opcion=''
+                cont=1
+                for i in map['options']:
+                    value=i['value']
+                    input=value['input']
+                    opcion = opcion+str(cont)+'. ' + i['label'] + ' '+input['text']+'\n'
+                    cont+=1
+                respuesta=respuesta+'\n'+opcion
+            if(type=='image'):
+                respuesta=[]
+                respuesta.append(1)
+                respuesta.append(map['description'])
+                respuesta.append(map['source'])
         except  ApiException as ex:
 
             print("Fallo obtener mensaje " + str(ex.code) + ": " + ex.message)
-
-        # si la respuesta es solo texto, al trabajar con respuestas co imagenes cambiar el codigo
-
 
         return respuesta
