@@ -16,7 +16,7 @@ class Chatbot():
         self.assistant=None
         self.assistantId=ibm_assitantId
 
-        self.sessionId= self.conexionIbm(ibm_apiKey,ibm_url,ibm_assitantId)
+        #self.sessionId= self.conexionIbm(ibm_apiKey,ibm_url,ibm_assitantId)
 
         self.ibm_apikey = ibm_apiKey
         self.ibm_url=ibm_url
@@ -75,10 +75,8 @@ class Chatbot():
             respuesta='Hola '+persona['first_name']+' 👋'+'\n '+'Me llamo School bot y estoy aqui para ayudarte '
             update.message.reply_text(respuesta)
         else:
-            #self.sessionId = self.conexionIbm(self.ibm_apikey, self.ibm_url, self.ibm_assitantId)
-            #session = self.assistant.create_session(self.ibm_assitantId).get_result()
-            #sessionId = session["session_id"]
-            #self.sessionId=sessionId
+            self.sessionId = self.conexionIbm(self.ibm_apikey, self.ibm_url, self.ibm_assitantId)
+
             respuesta = self.obtenerMensaje(update.message.text, self.sessionId)
             try:
                 if (respuesta[0]==1):
